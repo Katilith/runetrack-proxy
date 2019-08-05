@@ -53,6 +53,37 @@ app.get('/profiles/:playerName/quests', (request, response) => {
 		.catch(error => response.send(error));
 });
 
+app.get('/profiles/:playerName/clan', (request, response) => {
+	const playerName = request.params['playerName'];
+	if(!playerName || !playerName.trim() || !validPlayerName(playerName)) {
+		response.status(400).send('Bad Request');
+		return;
+	}
+
+	requestify.get(`http://services.runescape.com/m=website-data/playerDetails.ws?names=["${ playerName }"]&callback=jQuery000000000000000_0000000000&_=0`)
+		.then(runescapeResponse => {
+			let body = runescapeResponse.body;
+			if(!body || body.indexOf('jQuery000000000000000_0000000000([') === -1) {
+				response.status(500).send('Unknown Error');
+				return;
+			}
+
+			body = body.substring('jQuery000000000000000_0000000000(['.length, body.length - 4);
+
+			const clanDetails = JSON.parse(body);
+			if(clanDetails.hasOwnProperty('isSuffix')) {
+				clanDetails.isSuffix = undefined;
+			}
+
+			if(clanDetails.hasOwnProperty('title')) {
+				clanDetails.title = undefined;
+			}
+
+			response.send(clanDetails);
+		})
+		.catch(error => response.send(error));
+});
+
 app.get('/profiles/:playerName', (request, response) => {
 	const playerName = request.params['playerName'];
 	if(!playerName || !playerName.trim() || !validPlayerName(playerName)) {
